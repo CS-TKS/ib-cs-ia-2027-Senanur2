@@ -481,6 +481,40 @@ class AlarmApp:
         # This is menu option 4: turn a whole list ON or OFF
 
     def toggle_list(self):
+        #Show the screen title
+        #Let the user pick a list
+        #If nothing was chosen
+    #I need to add an 'if' function here..
+        # Leave this function early
+        # Ask ON or OFF, remove spaces, and make it lowercase
+        # If the user typed "on"
+# then i can add an elif here incase user types 'off'
+        # If the user typed "off"
+        # Turn every alarm in the list OFF
+        # If the user typed anything else
+# Save the change to the file
+# Tell the user it worked
+# This is menu option 5: delete a whole list
+# Show the screen title
+# If nothing was chosen
+# Leave this function early
+# Ask the user to confirm, because deleting cannot be undone
+# If the user typed "y"
+# Remove the list from our lists
+# Save the change to the file
+# If the user typed anything else
+# This lets the user pick one alarm from a list by its number
+# Repeat until the user picks a valid number
+# Try to turn the answer into a whole number
+# Ask the user and convert their answer to an integer
+# Check the number is between 1 and the number of alarms
+# Give back the chosen alarm (Python counts from 0, so subtract 1)
+# otherwise tell the user the number does not exist
+# Tell the user what went wrong, then the loop asks again
+
+
+
+
 
 
 
