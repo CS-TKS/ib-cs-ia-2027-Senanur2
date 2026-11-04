@@ -229,6 +229,258 @@ class AlarmApp:
     def __init__(self):
         # Make a FileManager that uses our CSV file
         self.file_manager = FileManager(FILE_NAME)
+        # Load saved lists from the file (empty if nothing was saved)
+        self.alarm_lists = self.file_manager.load_from_file()
+        # This is True while the alarms are running (the clock is being watched)
+        self.running = False
+        # This holds the alarm that is ringing right now (None means nothing is ringing)
+        self.ringing_alarm = None
+        # This holds the list that the ringing alarm belongs to
+        self.ringing_list = None
+
+        # This clears the terminal so each screen looks clean
+
+    def clear_screen(self):
+        # If this computer is Windows
+        if sys.platform.startswith("win"):
+            # Windows uses the command "cls" to clear the screen
+            os.system("cls")
+        # If this is a Mac or Linux computer with a real terminal (TERM is set)
+        elif "TERM" in os.environ:
+            # Mac and Linux use the command "clear"
+            os.system("clear")
+        # If there is no real terminal (like PyCharm's Run window)
+        else:
+            # Print 40 empty lines to push the old text out of view instead
+            print("\n" * 40)
+
+        # This clears the screen and prints a title at the top
+
+    def show_title(self, title):
+        # Clear the screen first
+        self.clear_screen()
+        # Print a line of 50 "=" signs
+        print("=" * 50)
+        # Print the title in the middle of 50 characters
+        print(title.center(50))
+        # Print another line of 50 "=" signs
+        print("=" * 50)
+        # If an alarm is ringing right now
+        if self.ringing_alarm is not None:
+            # Show a reminder on every screen so the user knows how to answer it
+            print("*** ALARM RINGING! Type W (I woke up) or S (snooze) + Enter ***")
+
+        # This waits for the user to press Enter so they can read the screen
+
+    def pause(self):
+        # Show the message and wait for Enter
+        self.ask("\nPress Enter to go back to the menu...")
+
+        # This shows the home screen: today's date and all the saved lists
+
+    def show_dashboard(self):
+        # Show the app title
+        self.show_title("ALARM MANAGER")
+        # Print today's day, date and time
+        print(datetime.now().strftime("%A, %d %B %Y   %H:%M"))
+        # Tell the user the alarms are working by themselves
+        print("Alarms are ON. Keep this window open so they can ring.")
+        # Show when the next alarm will ring
+        print(f"Next alarm: {self.next_alarm_text()}")
+        # Print the heading for the lists
+        print("\nYOUR ALARM LISTS")
+        # If there are no lists yet
+        if not self.alarm_lists:
+            # Tell the user how to make one
+            print("  (none yet - create one with option 1)")
+        # Go through the lists and number them starting at 1
+        for number, alarm_list in enumerate(self.alarm_lists, start=1):
+            # Print the number and the one-line summary of the list
+            print(f"  {number}. {alarm_list.summary()}")
+
+        # This asks for a time and keeps asking until the user types a valid one
+
+    def ask_time(self, prompt):
+        # Repeat forever until we return a good answer
+        while True:
+            # Ask the user and remove extra spaces from their answer
+            text = self.ask(prompt).strip()
+            # Try to turn the text into a time
+            try:
+                # If it works, give the time back and stop repeating
+                return datetime.strptime(text, TIME_FORMAT)
+            # If the text was not a valid time
+            except ValueError:
+                # Tell the user what went wrong, then the loop asks again
+                print("Invalid time. Use 24-hour HH:MM, for example 07:30.")
+
+        # This asks for the minutes between alarms and keeps asking until it is valid
+
+    def ask_interval(self):
+        # Repeat forever until we return a good answer
+        while True:
+            # Try to turn the answer into a whole number
+            try:
+                # Ask the user and convert their answer to an integer
+                minutes = int(self.ask("Minutes between alarms (e.g. 5): "))
+                # Check the number is bigger than 0
+                if minutes > 0:
+                    # If so, give it back and stop repeating
+                    return minutes
+                # Otherwise tell the user the number was too small
+                print("The interval must be more than 0.")
+            # If the answer was not a whole number
+            except ValueError:
+                # Tell the user what went wrong, then the loop asks again
+                print("Please enter a whole number.")
+
+        # This asks which days a list should ring on and keeps asking until it understands
+
+    def ask_days(self):
+        # Explain how to answer
+        print("\nWhich days should this list ring?")
+        # Show examples
+        print("Type days like: mon wed fri   or: weekdays, weekend, everyday")
+        # Repeat until we get a good answer
+        while True:
+            # Ask the user, remove extra spaces, and make it lowercase
+            text = self.ask("Days (press Enter for every day): ").strip().lower()
+            # If the user just pressed Enter
+            if text == "":
+                # Use every day
+                return [0, 1, 2, 3, 4, 5, 6]
+            # Start with no days chosen
+            days = []
+            # Remember if we understood every word
+            understood = True
+            # Go through each word (commas count as spaces)
+            for word in text.replace(",", " ").split():
+                # If the word means every day
+                if word in ("everyday", "all"):
+                    # Add Monday to Sunday
+                    days.extend(range(7))
+                # If the word means Monday to Friday
+                elif word == "weekdays":
+                    # Add Monday to Friday
+                    days.extend(range(5))
+                # If the word means the weekend
+                elif word == "weekend":
+                    # Add Saturday and Sunday
+                    days.extend([5, 6])
+                # If the first 3 letters are a day name (so "monday" works too)
+                elif word[:3] in DAY_NAMES:
+                    # Add that day's number
+                    days.append(DAY_NAMES.index(word[:3]))
+                # If we do not know the word
+                else:
+                    # Remember that something was not understood
+                    understood = False
+            # If every word was understood and at least one day was chosen
+            if understood and len(days) > 0:
+                # Give back the days: set() removes repeats, sorted() puts them in order
+                return sorted(set(days))
+            # Otherwise tell the user and ask again
+            print("Sorry, I did not understand that. Example: mon wed fri")
+
+        # This shows all lists and lets the user pick one
+
+    def choose_list(self):
+        # If there are no lists at all
+        if not self.alarm_lists:
+            # Tell the user to make one first
+            print("\nNo lists yet. Create one first (option 1).")
+            # Give back None, which means "nothing was chosen"
+            return None
+        # Print an empty line for spacing
+        print()
+        # Go through the lists and number them starting at 1
+        for number, alarm_list in enumerate(self.alarm_lists, start=1):
+            # Print the number and the list name
+            print(f"{number}. {alarm_list.name}")
+        # Repeat until the user picks a valid number
+        while True:
+            # Try to turn the answer into a whole number
+            try:
+                # Ask the user and convert their answer to an integer
+                choice = int(self.ask("Choose a list number: "))
+                # Check the number is between 1 and the number of lists
+                if 1 <= choice <= len(self.alarm_lists):
+                    # Give back the chosen list (Python counts from 0, so subtract 1)
+                    return self.alarm_lists[choice - 1]
+                # Otherwise tell the user the number does not exist
+                print("That number is not in the list.")
+            # If the answer was not a whole number
+            except ValueError:
+                # Tell the user what went wrong, then the loop asks again
+                print("Please enter a number.")
+
+        # This is menu option 1: make a new alarm list
+
+    def create_list(self):
+        # Show the screen title
+        self.show_title("CREATE AN ALARM LIST")
+        # Ask for the list name and remove extra spaces
+        name = self.ask("Name of the new list (e.g. School): ").strip()
+        # Check if the user typed nothing
+        if name == "":
+            # Tell the user the name is needed
+            print("The name cannot be empty.")
+            # Leave this function early
+            return
+        # Go through the lists we already have
+        for existing in self.alarm_lists:
+            # Compare names ignoring capital letters ("School" equals "school")
+            if existing.name.lower() == name.lower():
+                # Tell the user the name is taken
+                print("A list with that name already exists.")
+                # Leave this function early
+                return
+
+        # Ask for the start time (this keeps asking until it is valid)
+        start = self.ask_time("Start time (HH:MM): ")
+        # Repeat until the end time is acceptable
+        while True:
+            # Ask for the end time (this keeps asking until it is valid)
+            end = self.ask_time("End time (HH:MM, same as start for one alarm): ")
+            # Check the end time is not before the start time
+            if end >= start:
+                # It is fine, so stop repeating
+                break
+            # Otherwise tell the user what is wrong, then ask again
+            print("The end time must be the same as or after the start time.")
+        # Ask for the minutes between alarms
+        interval = self.ask_interval()
+        # Ask which days the list should ring on
+        days = self.ask_days()
+
+        # Make a new empty alarm list with the chosen name
+        new_list = AlarmList(name)
+        # Fill the list with alarms using the start, end and interval
+        new_list.generate_alarms(start, end, interval)
+        # Save the chosen days in the list
+        new_list.days = days
+        # Add the new list to our big list of lists
+        self.alarm_lists.append(new_list)
+        # Save everything to the file so it is not lost
+        self.file_manager.save_to_file(self.alarm_lists)
+        # Tell the user it worked and how many alarms were made
+        print(f"\nCreated '{name}' with {len(new_list.alarms)} alarms ({new_list.days_text()}).")
+
+        # This is menu option 2: show the alarms in a list
+
+    def view_alarms(self):
+        # Show the screen title
+        self.show_title("VIEW ALARMS")
+        # Let the user pick a list
+        chosen = self.choose_list()
+        # If a list was really chosen (not None)
+        if chosen:
+            # Print its alarms
+            chosen.show()
+
+        # This is menu option 4: turn a whole list ON or OFF
+
+    def toggle_list(self):
 
 
 
