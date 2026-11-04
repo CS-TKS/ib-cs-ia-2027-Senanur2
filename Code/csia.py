@@ -28,9 +28,9 @@ DAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 class Alarm:
     #this runs when we make anew Alarm and sets up its information
 def __init__(self, time,label, is_active = True):
-        self.time= time
-        self.label=label
-        self.is_active = is_active
+    self.time= time
+    self.label=label
+    self.is_active = is_active
     #this decides how an alrm looks when we print it
 def __str__(self):
         status = "ON" if self.is_active else "OFF"
@@ -732,7 +732,190 @@ def find_next_alarm(self):
                     best_time = None
                     # Go through every alarm list
                     for alarm_list in self.alarm_lists:
-                # Go through every alarm in this list
+                        for alarm in alarm_list.alarms:
+                            # Only look at alarms that are ON
+                            if alarm.is_active:
+                                # Look at today and the next 7 days
+                                for days_ahead in range(8):
+                                    # Work out the date that is this many days from now
+                                    day = now + timedelta(days=days_ahead)
+                                    # Check if the list rings on that day of the week
+                                    if day.weekday() in alarm_list.days:
+                                        # Join that date with the alarm's time
+                                        ring_time = datetime.combine(day.date(), alarm.time)
+                                        # Check that this moment is still in the future
+                                        if ring_time > now:
+                                            # If we have none yet, or this one is sooner than the one we have
+                                            if best_time is None or ring_time < best_time:
+                                                # Keep this alarm as the best one so far
+                                                best_alarm = alarm
+                                                # Keep its date and time too
+                                                best_time = ring_time
+                                            # The first matching day is enough for this alarm
+                                            break
+                        # Give back the alarm and when it rings (both are None if there is none)
+                    return best_alarm, best_time
+
+                    # This gives the next alarm as text, like "07:05 (School)" or "Mon 07:00 (School)"
+                    def next_alarm_text(self):
+                        # Find the next alarm and when it rings
+                        alarm, ring_time = self.find_next_alarm()
+                        # If there is no active alarm at all
+                        if alarm is None:
+                            # Say so
+                            return "none (no active alarms)"
+                        # If the alarm rings today
+                        if ring_time.date() == datetime.now().date():
+                            # Show only the time
+                            when = ring_time.strftime(TIME_FORMAT)
+                        # If the alarm rings on another day
+                        else:
+                            # Show the short day name and the time
+                            when = ring_time.strftime("%a ") + ring_time.strftime(TIME_FORMAT)
+                        # Give back the text
+                        return f"{when} ({alarm.label})"
+
+                    # This plays a sound once so the alarm can be heard
+                    def play_sound(self):
+                        # If this computer is a Mac
+                        if sys.platform == "darwin":
+                            # Play a built-in Mac sound file (the program waits until it finishes)
+                            os.system("afplay /System/Library/Sounds/Glass.aiff")
+                        # If this computer is Windows
+                        elif sys.platform.startswith("win"):
+                            # Load the Windows sound tool (only exists on Windows)
+                            import winsound
+                            # Play a beep at 1000 Hz for 700 milliseconds
+                            winsound.Beep(1000, 700)
+                        # If this is any other computer
+                        else:
+                            # Print the terminal bell character, which makes a beep on many terminals
+                            print("\a", end="", flush=True)
+                            # Wait 1 second so the beeps are not too fast
+                            sleep(1)
+
+                    # This runs in the background: it watches the real clock and starts alarms ringing
+                    def watch_clock(self):
+                        # Remember which alarms already rang so each one only rings once
+                        already_rung = set()
+                        # Keep going until the user stops the alarms
+                        while self.running:
+                            # Get the real current date and time from the computer
+                            now = datetime.now()
+                            # Turn the current time into text like "07:05" so we can compare it
+                            now_text = now.strftime(TIME_FORMAT)
+                            # Go through every alarm list
+                            for alarm_list in self.alarm_lists:
+                                # Go through every alarm in this list
+                                for alarm in alarm_list.alarms:
+                                    # Make a tag for this alarm on today's date (so it can ring again tomorrow)
+                                    tag = (alarm_list.name, now.strftime("%Y-%m-%d"), now_text)
+                                    # Check: alarm is ON, today is one of the list's days, its time matches now, and it has not rung yet
+                                    if alarm.is_active and now.weekday() in alarm_list.days and alarm.time.strftime(
+                                            TIME_FORMAT) == now_text and tag not in already_rung:
+                                        # Remember that this alarm has rung
+                                        already_rung.add(tag)
+                                        # Only start ringing if no other alarm is ringing right now
+                                        if self.ringing_alarm is None:
+                                            # Remember which list the ringing alarm belongs to
+                                            self.ringing_list = alarm_list
+                                            # Remember which alarm is ringing (this starts the sound)
+                                            self.ringing_alarm = alarm
+                                            # Tell the user which alarm is ringing
+                                            print(f"\n*** ALARM: {alarm_list.name} - {now_text} ***")
+                                            # Tell the user how to answer
+                                            print("Type W if you woke up, or S to snooze, then press Enter.")
+                            # If an alarm is ringing
+                            if self.ringing_alarm is not None:
+                                # Play the sound (this repeats until the user answers)
+                                self.play_sound()
+                            # If nothing is ringing
+                            else:
+                                # Wait 1 second before checking the clock again
+                                sleep(1)
+
+                    # This starts the clock in the background, then shows the home screen until the user exits
+                    def run(self):
+                        # Mark the alarms as running
+                        self.running = True
+                        # Make the background worker; daemon=True means it stops if the program closes
+                        clock_thread = threading.Thread(target=self.watch_clock, daemon=True)
+                        # Start the background worker (from now on the alarms can ring on any screen)
+                        clock_thread.start()
+                        # Repeat forever (until we use break)
+                        while True:
+                            # Show the home screen with the saved lists
+                            self.show_dashboard()
+                            # Print the menu heading
+                            print("\nMENU")
+                            # Print menu option 1
+                            print("  1. Create an alarm list")
+                            # Print menu option 2
+                            print("  2. View alarms in a list")
+                            # Print menu option 3
+                            print("  3. Edit a list (add, change or remove alarms)")
+                            # Print menu option 4
+                            print("  4. Turn a whole list ON/OFF")
+                            # Print menu option 5
+                            print("  5. Delete a list")
+                            # Print menu option 6
+                            print("  6. Exit")
+                            # Ask the user for their choice and remove extra spaces
+                            choice = self.ask("\nChoose an option: ").strip()
+
+                            # If the user chose 1
+                            if choice == "1":
+                                # Run the create list screen
+                                self.create_list()
+                                # Wait for Enter before going back to the menu
+                                self.pause()
+                            # If the user chose 2
+                            elif choice == "2":
+                                # Run the view alarms screen
+                                self.view_alarms()
+                                # Wait for Enter before going back to the menu
+                                self.pause()
+                            # If the user chose 3
+                            elif choice == "3":
+                                # Run the edit screen (it has its own way to go back)
+                                self.edit_list()
+                            # If the user chose 4
+                            elif choice == "4":
+                                # Run the turn on/off screen
+                                self.toggle_list()
+                                # Wait for Enter before going back to the menu
+                                self.pause()
+                            # If the user chose 5
+                            elif choice == "5":
+                                # Run the delete screen
+                                self.delete_list()
+                                # Wait for Enter before going back to the menu
+                                self.pause()
+                            # If the user chose 6
+                            elif choice == "6":
+                                # Tell the background worker to stop
+                                self.running = False
+                                # Stop any ringing
+                                self.ringing_alarm = None
+                                # Say goodbye and remind the user that closed means no alarms
+                                print("Goodbye! Alarms cannot ring while the program is closed.")
+                                # Stop the loop, which ends the program
+                                break
+                            # If the user typed anything else
+                            else:
+                                # Tell the user to pick a valid number
+                                print("Please choose a number from 1 to 6.")
+                                # Wait for Enter so the message can be read
+                                self.pause()
+
+                    # This is true only when you run this file directly (not when it is imported)
+
+
+if __name__ == "__main__":
+    # Make the app and start the home screen
+    AlarmApp().run()
+
+
 
 
 
