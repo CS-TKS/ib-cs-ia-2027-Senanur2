@@ -535,7 +535,7 @@ def delete_list(self):
                 print("\nNothing was deleted.")
 
         # This lets the user pick one alarm from a list by its number
-        def choose_alarm(self, alarm_list):
+def choose_alarm(self, alarm_list):
             # Repeat until the user picks a valid number
             while True:
                 # Try to turn the answer into a whole number
@@ -554,7 +554,7 @@ def delete_list(self):
                     print("Please enter a number.")
 
         # This is menu option 3: add, change or remove the alarms in a list
-        def edit_list(self):
+def edit_list(self):
             # Show the screen title
             self.show_title("EDIT A LIST")
             # Let the user pick a list
@@ -612,6 +612,128 @@ def delete_list(self):
                     else:
                         # Add the alarm to the list
                         chosen.add_alarm(new_time)
+                        # Save the change to the file
+                        self.file_manager.save_to_file(self.alarm_lists)
+                        # Set a message to confirm it worked
+                        message = f"Added an alarm at {new_time.strftime(TIME_FORMAT)}."
+                        # If the user chose 2 (change a time)
+                    elif choice == "2":
+                    # Let the user pick which alarm to change
+                    alarm = self.choose_alarm(chosen)
+                    # Ask for the new time and keep only the time part
+                    new_time = self.ask_time("New time (HH:MM): ").time()
+                    # If there is already an alarm at that time
+                    if chosen.has_time(new_time):
+                        # Set a message explaining why nothing changed
+                        message = "There is already an alarm at that time."
+                    # If the time is free
+                    else:
+                        # Give the alarm its new time
+                        alarm.time = new_time
+                        # Put the alarms back in order
+                        chosen.sort_alarms()
+                        # Save the change to the file
+                        self.file_manager.save_to_file(self.alarm_lists)
+                        # Set a message to confirm it worked
+                        message = f"Changed the alarm to {new_time.strftime(TIME_FORMAT)}."
+                    # If the user chose 3 (remove an alarm)
+                elif choice == "3":
+                    # A list must keep at least one alarm (an empty list cannot be saved)
+                    if len(chosen.alarms) == 1:
+                        # Tell the user what to do instead
+                        message = "A list needs at least one alarm. Use 'Delete a list' instead."
+                    # If the list has more than one alarm
+                    else:
+                        # Let the user pick which alarm to remove
+                        alarm = self.choose_alarm(chosen)
+                        # Remove it from the list
+                        chosen.alarms.remove(alarm)
+                        # Save the change to the file
+                        self.file_manager.save_to_file(self.alarm_lists)
+                        # Set a message to confirm it worked
+                        message = f"Removed the alarm at {alarm.time.strftime(TIME_FORMAT)}."
+                    # If the user chose 4 (turn one alarm ON/OFF)
+                elif choice == "4":
+                    # Let the user pick which alarm to switch
+                    alarm = self.choose_alarm(chosen)
+                    # Flip it: ON becomes OFF, OFF becomes ON
+                    alarm.is_active = not alarm.is_active
+                    # Save the change to the file
+                    self.file_manager.save_to_file(self.alarm_lists)
+                    # Pick the word ON or OFF for the message
+                    word = "ON" if alarm.is_active else "OFF"
+                    # Set a message to confirm it worked
+                    message = f"The alarm at {alarm.time.strftime(TIME_FORMAT)} is now {word}."
+                    # If the user chose 5 (change the days)
+                elif choice == "5":
+                    # Ask for the new days and save them in the list
+                    chosen.days = self.ask_days()
+                    # Save the change to the file
+                    self.file_manager.save_to_file(self.alarm_lists)
+                    # Set a message to confirm it worked
+                    message = f"This list now rings: {chosen.days_text()}."
+                    # If the user chose 6 (back)
+                elif choice == "6":
+                    # Stop repeating and leave this function
+                    break
+                    # If the user typed anything else
+                else:
+                    # Set a message asking for a valid number
+                    message = "Please choose a number from 1 to 6."
+
+                    # This is used when the user answers a ringing alarm: W = I woke up, S = snooze
+
+def answer_alarm(self, command):
+                    # If the user typed "s" (snooze)
+                    if command == "s":
+                        # Stop the ringing; the next alarm will ring at its own time
+                        self.ringing_alarm = None
+                        # Tell the user when the next alarm will ring
+                        print(f"Snoozed. Next alarm: {self.next_alarm_text()}")
+                    # If the user typed "w" (I woke up)
+                    else:
+                        # Remember the list that was ringing
+                        woken_list = self.ringing_list
+                        # Stop the ringing straight away
+                        self.ringing_alarm = None
+                        # Turn off the alarms in that list that are still to come
+                        count = woken_list.i_woke_up(datetime.now().time())
+                        # Save the change to the file
+                        self.file_manager.save_to_file(self.alarm_lists)
+                        # Tell the user how many alarms were turned off
+                        print(f"Good morning! Turned off {count} remaining alarm(s) in '{woken_list.name}'.")
+
+                    # This asks the user a question; if an alarm is ringing, W and S answer the alarm instead
+
+def ask(self, prompt):
+                    # Repeat until we have a normal answer
+                    while True:
+                        # Ask the question and wait for the user to type
+                        text = input(prompt)
+                        # Clean the answer: remove spaces and make it lowercase
+                        command = text.strip().lower()
+                        # If an alarm is ringing and the user typed w or s
+                        if self.ringing_alarm is not None and command in ("w", "s"):
+                            # Handle the alarm answer
+                            self.answer_alarm(command)
+                            # Go back to the top and ask the same question again
+                            continue
+                        # Otherwise give the answer back to whoever asked
+                        return text
+
+                    # This finds the next alarm that will really ring (it looks at each list's days)
+
+def find_next_alarm(self):
+                    # Get the current date and time
+                    now = datetime.now()
+                    # Start with no alarm found
+                    best_alarm = None
+                    # This will hold the date and time when the best alarm rings
+                    best_time = None
+                    # Go through every alarm list
+                    for alarm_list in self.alarm_lists:
+                # Go through every alarm in this list
+
 
 
 
