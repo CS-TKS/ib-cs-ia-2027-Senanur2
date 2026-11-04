@@ -27,12 +27,12 @@ DAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 class Alarm:
     #this runs when we make anew Alarm and sets up its information
-    def __init__(self, time,label, is_active = True):
+def __init__(self, time,label, is_active = True):
         self.time= time
         self.label=label
         self.is_active = is_active
     #this decides how an alrm looks when we print it
-    def __str__(self):
+def __str__(self):
         status = "ON" if self.is_active else "OFF"
         return f"{self.time.strftime(TIME_FORMAT) [{status}] {self.label}}"
 
@@ -45,14 +45,14 @@ class AlarmList:
         self.alarms = []
         self.days = [0,1,2,3,4,5,6]
 
-    def generate_alarms (self, start, end, interval_minutes):
+def generate_alarms (self, start, end, interval_minutes):
         current = start
 
         while current <= end:
             self.alarms.apend(Alarm(current.time(), self.name))
             current = current + timedelta(minutes = interval_minutes)
 
-   def add_alarm(self, time):
+def add_alarm(self, time):
        for alarm in self.alarms:
 
            if alarm.time == time:
@@ -70,19 +70,19 @@ class AlarmList:
 
 
   # This turns ALL alarms in the list ON (True) or OFF (False)
-    def toggle_all(self, turn_on):
+def toggle_all(self, turn_on):
         # Go through every alarm one by one
         for alarm in self.alarms:
             # Set this alarm to ON or OFF
             alarm.is_active = turn_on
 
     # This puts the alarms in order from the earliest time to the latest
-    def sort_alarms(self):
+def sort_alarms(self):
         # Sort the list, using each alarm's time as the thing to compare
         self.alarms.sort(key=lambda alarm: alarm.time)
 
     # This checks if the list already has an alarm at a given time
-    def has_time(self, time):
+def has_time(self, time):
         # Go through every alarm one by one
         for alarm in self.alarms:
             # If this alarm has the same time
@@ -93,7 +93,7 @@ class AlarmList:
         return False
 
     # This turns off every alarm that is still to come after the time "now"
-    def i_woke_up(self, now):
+def i_woke_up(self, now):
         # Start counting how many alarms we turn off
         count = 0
         # Go through every alarm one by one
@@ -108,7 +108,7 @@ class AlarmList:
         return count
 
     # This gives the days of the list as short text, like "Mon-Fri" or "Mon, Wed, Fri"
-    def days_text(self):
+def days_text(self):
         # If the list rings on all 7 days
         if len(self.days) == 7:
             # Give back "Every day"
@@ -131,7 +131,7 @@ class AlarmList:
         return ", ".join(names)
 
     # This gives one line of text that describes the list (used on the home screen)
-    def summary(self):
+def summary(self):
         # Start counting how many alarms are ON
         active_count = 0
         # Go through every alarm one by one
@@ -148,7 +148,7 @@ class AlarmList:
         return f"{self.name:<12}{first} - {last}   {self.days_text()}   {active_count} of {len(self.alarms)} ON"
 
     # This prints the list name and all its alarms
-    def show(self):
+def show(self):
         # Print the list name, how many alarms it has, and the days it rings on
         print(f"\n{self.name} ({len(self.alarms)} alarms) - {self.days_text()}")
         # Go through every alarm one by one
@@ -160,12 +160,12 @@ class AlarmList:
 # This class saves the alarm lists to a CSV file and loads them back
 class FileManager:
     # This runs when we make a new FileManager
-    def __init__(self, filename):
+def __init__(self, filename):
         # Save the name of the file we will use
         self.filename = filename
 
     # This writes all the alarm lists into the CSV file
-    def save_to_file(self, alarm_lists):
+def save_to_file(self, alarm_lists):
         # Open the file for writing ("w"); it is closed automatically after the block
         with open(self.filename, "w", newline="") as file:
             # Make a writer that knows how to write CSV rows
@@ -182,7 +182,7 @@ class FileManager:
                     writer.writerow([alarm_list.name, alarm.time.strftime(TIME_FORMAT), alarm.is_active, days_text])
 
     # This reads the CSV file and rebuilds the alarm lists
-    def load_from_file(self):
+def load_from_file(self):
         # This dictionary connects a list name to its AlarmList object
         lists_by_name = {}
         # Try to open the file (it might not exist yet)
@@ -226,7 +226,7 @@ class FileManager:
 # This class is the app: it shows the screens and connects everything together
 class AlarmApp:
     # This runs when the app starts
-    def __init__(self):
+def __init__(self):
         # Make a FileManager that uses our CSV file
         self.file_manager = FileManager(FILE_NAME)
         # Load saved lists from the file (empty if nothing was saved)
@@ -240,7 +240,7 @@ class AlarmApp:
 
         # This clears the terminal so each screen looks clean
 
-    def clear_screen(self):
+def clear_screen(self):
         # If this computer is Windows
         if sys.platform.startswith("win"):
             # Windows uses the command "cls" to clear the screen
@@ -256,7 +256,7 @@ class AlarmApp:
 
         # This clears the screen and prints a title at the top
 
-    def show_title(self, title):
+def show_title(self, title):
         # Clear the screen first
         self.clear_screen()
         # Print a line of 50 "=" signs
@@ -271,14 +271,13 @@ class AlarmApp:
             print("*** ALARM RINGING! Type W (I woke up) or S (snooze) + Enter ***")
 
         # This waits for the user to press Enter so they can read the screen
-
-    def pause(self):
+def pause(self):
         # Show the message and wait for Enter
         self.ask("\nPress Enter to go back to the menu...")
 
         # This shows the home screen: today's date and all the saved lists
 
-    def show_dashboard(self):
+def show_dashboard(self):
         # Show the app title
         self.show_title("ALARM MANAGER")
         # Print today's day, date and time
@@ -300,7 +299,7 @@ class AlarmApp:
 
         # This asks for a time and keeps asking until the user types a valid one
 
-    def ask_time(self, prompt):
+def ask_time(self, prompt):
         # Repeat forever until we return a good answer
         while True:
             # Ask the user and remove extra spaces from their answer
@@ -316,7 +315,7 @@ class AlarmApp:
 
         # This asks for the minutes between alarms and keeps asking until it is valid
 
-    def ask_interval(self):
+def ask_interval(self):
         # Repeat forever until we return a good answer
         while True:
             # Try to turn the answer into a whole number
@@ -336,7 +335,7 @@ class AlarmApp:
 
         # This asks which days a list should ring on and keeps asking until it understands
 
-    def ask_days(self):
+def ask_days(self):
         # Explain how to answer
         print("\nWhich days should this list ring?")
         # Show examples
@@ -384,7 +383,7 @@ class AlarmApp:
 
         # This shows all lists and lets the user pick one
 
-    def choose_list(self):
+def choose_list(self):
         # If there are no lists at all
         if not self.alarm_lists:
             # Tell the user to make one first
@@ -416,7 +415,7 @@ class AlarmApp:
 
         # This is menu option 1: make a new alarm list
 
-    def create_list(self):
+def create_list(self):
         # Show the screen title
         self.show_title("CREATE AN ALARM LIST")
         # Ask for the list name and remove extra spaces
@@ -468,7 +467,7 @@ class AlarmApp:
 
         # This is menu option 2: show the alarms in a list
 
-    def view_alarms(self):
+def view_alarms(self):
         # Show the screen title
         self.show_title("VIEW ALARMS")
         # Let the user pick a list
@@ -480,37 +479,35 @@ class AlarmApp:
 
         # This is menu option 4: turn a whole list ON or OFF
 
-    def toggle_list(self):
-        #Show the screen title
-        #Let the user pick a list
-        #If nothing was chosen
-    #I need to add an 'if' function here..
-        # Leave this function early
+def toggle_list(self):
+        # Show the screen title
+        self.show_title("TURN A LIST ON OR OFF")
+        # Let the user pick a list
+        chosen = self.choose_list()
+        # If nothing was chosen
+        if chosen is None:
+            # Leave this function early
+            return
         # Ask ON or OFF, remove spaces, and make it lowercase
+        answer = self.ask("Turn the list ON or OFF? (on/off): ").strip().lower()
         # If the user typed "on"
-# then i can add an elif here incase user types 'off'
+        if answer == "on":
+            # Turn every alarm in the list ON
+            chosen.toggle_all(True)
         # If the user typed "off"
-        # Turn every alarm in the list OFF
+        elif answer == "off":
+            # Turn every alarm in the list OFF
+            chosen.toggle_all(False)
         # If the user typed anything else
-# Save the change to the file
-# Tell the user it worked
-# This is menu option 5: delete a whole list
-# Show the screen title
-# If nothing was chosen
-# Leave this function early
-# Ask the user to confirm, because deleting cannot be undone
-# If the user typed "y"
-# Remove the list from our lists
-# Save the change to the file
-# If the user typed anything else
-# This lets the user pick one alarm from a list by its number
-# Repeat until the user picks a valid number
-# Try to turn the answer into a whole number
-# Ask the user and convert their answer to an integer
-# Check the number is between 1 and the number of alarms
-# Give back the chosen alarm (Python counts from 0, so subtract 1)
-# otherwise tell the user the number does not exist
-# Tell the user what went wrong, then the loop asks again
+        else:
+            # Tell the user what to type
+            print("Please type 'on' or 'off'.")
+            # Leave this function early
+            return
+        # Save the change to the file
+        self.file_manager.save_to_file(self.alarm_lists)
+        # Tell the user it worked
+        print(f"\nAll alarms in '{chosen.name}' are now {answer.upper()}.")
 
 
 
