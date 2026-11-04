@@ -34,7 +34,7 @@ def __init__(self, time,label, is_active = True):
     #this decides how an alrm looks when we print it
 def __str__(self):
         status = "ON" if self.is_active else "OFF"
-        return f"{self.time.strftime(TIME_FORMAT) [{status}] {self.label}}"
+        return f"{self.time.strftime(TIME_FORMAT)}  [{status}]  {self.label}"
 
 
 
@@ -66,7 +66,7 @@ def add_alarm(self, time):
                position += 1
 
            self.alarms.insert(position, new_alarm)
-           reutrn True
+           return True
 
 
   # This turns ALL alarms in the list ON (True) or OFF (False)
@@ -508,6 +508,110 @@ def toggle_list(self):
         self.file_manager.save_to_file(self.alarm_lists)
         # Tell the user it worked
         print(f"\nAll alarms in '{chosen.name}' are now {answer.upper()}.")
+
+        # This is menu option 5: delete a whole list
+def delete_list(self):
+            # Show the screen title
+            self.show_title("DELETE A LIST")
+            # Let the user pick a list
+            chosen = self.choose_list()
+            # If nothing was chosen
+            if chosen is None:
+                # Leave this function early
+                return
+            # Ask the user to confirm, because deleting cannot be undone
+            answer = self.ask(f"Delete '{chosen.name}' for good? (y/n): ").strip().lower()
+            # If the user typed "y"
+            if answer == "y":
+                # Remove the list from our lists
+                self.alarm_lists.remove(chosen)
+                # Save the change to the file
+                self.file_manager.save_to_file(self.alarm_lists)
+                # Tell the user it worked
+                print(f"\n'{chosen.name}' was deleted.")
+            # If the user typed anything else
+            else:
+                # Tell the user nothing was deleted
+                print("\nNothing was deleted.")
+
+        # This lets the user pick one alarm from a list by its number
+        def choose_alarm(self, alarm_list):
+            # Repeat until the user picks a valid number
+            while True:
+                # Try to turn the answer into a whole number
+                try:
+                    # Ask the user and convert their answer to an integer
+                    choice = int(self.ask("Alarm number: "))
+                    # Check the number is between 1 and the number of alarms
+                    if 1 <= choice <= len(alarm_list.alarms):
+                        # Give back the chosen alarm (Python counts from 0, so subtract 1)
+                        return alarm_list.alarms[choice - 1]
+                    # Otherwise tell the user the number does not exist
+                    print("That number is not in the list.")
+                # If the answer was not a whole number
+                except ValueError:
+                    # Tell the user what went wrong, then the loop asks again
+                    print("Please enter a number.")
+
+        # This is menu option 3: add, change or remove the alarms in a list
+        def edit_list(self):
+            # Show the screen title
+            self.show_title("EDIT A LIST")
+            # Let the user pick a list
+            chosen = self.choose_list()
+            # If nothing was chosen
+            if chosen is None:
+                # Wait for Enter so the user can read the message
+                self.pause()
+                # Leave this function early
+                return
+            # This holds a short message to show at the top of the next screen
+            message = ""
+            # Repeat until the user chooses to go back
+            while True:
+                # Show the title with the name of the list
+                self.show_title(f"EDIT: {chosen.name}")
+                # If there is a message from the last action
+                if message != "":
+                    # Show the message
+                    print(f"\n>> {message}")
+                    # Clear the message so it only shows once
+                    message = ""
+                # Show which days this list rings on
+                print(f"\nRings on: {chosen.days_text()}")
+                # Print an empty line for spacing
+                print()
+                # Go through the alarms and number them starting at 1
+                for number, alarm in enumerate(chosen.alarms, start=1):
+                    # Print the number and the alarm
+                    print(f"  {number}. {alarm}")
+                # Print the edit options
+                print("\n  1. Add an alarm")
+                # Print edit option 2
+                print("  2. Change an alarm's time")
+                # Print edit option 3
+                print("  3. Remove an alarm")
+                # Print edit option 4
+                print("  4. Turn one alarm ON/OFF")
+                # Print edit option 5
+                print("  5. Change the days this list rings on")
+                # Print edit option 6
+                print("  6. Back to the main menu")
+                # Ask the user for their choice and remove extra spaces
+                choice = self.ask("\nChoose an option: ").strip()
+
+                # If the user chose 1 (add an alarm)
+                if choice == "1":
+                    # Ask for the new time and keep only the time part
+                    new_time = self.ask_time("New alarm time (HH:MM): ").time()
+                    # If there is already an alarm at that time
+                    if chosen.has_time(new_time):
+                        # Set a message explaining why nothing was added
+                        message = "There is already an alarm at that time."
+                    # If the time is free
+                    else:
+                        # Add the alarm to the list
+                        chosen.add_alarm(new_time)
 
 
 
